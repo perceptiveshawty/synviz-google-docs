@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title> Sidebar </title>
+    <link rel="stylesheet" href="https://ssl.gstatic.com/docs/script/css/add-ons.css">
+
+    <style>
+
+      .searchForm {
+        width: 95%;
+        text-align: center;
+      }
+
+      .searchForm input {
+        width: 65%;
+        margin: auto;
+        margin-top: 4px;
+        margin-bottom: 4px;
+        margin-right: 1.5px;
+        margin-left: 1.5px;
+        box-shadow: 0 0 20px rgba(0, 0, 0, 0.08);
+
+      }
+
+      .searchForm button {
+        width: 30%;
+        margin: auto;
+        margin-top: 4px;
+        margin-bottom: 4px;
+        margin-left: 1.5px;
+        margin-right: 1.5px;
+        box-shadow: 0 0 20px rgba(0, 0, 0, 0.08);
+      }
+
+      p {
+        width: 95%;
+        /* padding-bottom: 1px; */
+        font-size: 16px;
+        font-weight: bold;
+        /* padding: 16px; */
+        text-align: center;
+      }
+
+      .frqTable {
+        /* border: 0.5px solid black; */
+        width: 95%;
+        margin: auto;
+        margin-top: 16px;
+        text-align: center;
+        padding: 8px;
+        box-shadow: 0 0 20px rgba(0, 0, 0, 0.08);
+      }
+
+      .frqTable th {
+        text-align: center;
+        padding: auto;
+        font-weight: bold;
+      }
+
+      .frqTable td {
+        padding: auto;
+        font-size: 14px;
+      }
+
+      /* .frqTable td:nth-of-type(1) {
+        box-shadow: 0 0 20px rgba(0, 0, 0, 0.08);
+        padding: 0;
+        margin: 0;
+      } */
+
+      .frqTable caption {
+        margin-bottom: 8px;
+        padding-bottom: 12px;
+        font-size: 16px;
+        font-weight: bold;
+        /* padding: 16px; */
+        text-align: center;
+      }
+
+      .launchButton {
+        background-color: #f1f1f1;
+        color: black;
+        border-radius: 50%;
+        /* float: right; */
+        width: 5px;
+        margin: auto;
+      }
+
+      .launchButton:hover {
+        background-color: #0e0e0e;
+      }
+
+      .word {
+        color: violet;
+        font-weight: bold;
+      }
+
+      .expandButton {
+         background: url(http://i47.tinypic.com/2ni0ahd.png) 3px 5px no-repeat;
+      }
+
+    </style>
+  </head>
+
+  <script>
+      // gets the current word from the search bar
+      // retrieves the synonym tree object from getSynsTreeObject() using the current word
+      function fetchTreeData() {
+        event.preventDefault();
+        var currWord = document.getElementById("query").value;
+        if(currWord != "") {
+            google.script.run.withSuccessHandler(updateAndDisplaySynTree).getSynsTreeObject(currWord);
+            google.script.run.withSuccessHandler(constructLinkTable).getDefLinks(currWord);
+        }
+      }
+
+      // updates the global synonym tree variable with the new synonym tree object,
+      // calls constructSynTree in synonymtree.html to update the sidebar's synonym tree to new tree,
+      // displays the expanded synonym tree
+      function updateAndDisplaySynTree(synTreeDS) {
+        google.script.run.setSynTreeDataStruct(synTreeDS);
+        constructSynTree(synTreeDS);
+        google.script.run.displayExpandedTreeDialog();
+      }
+
+      function constructLinkTable(wordsAndURLs) {
+
+        var delLen = document.getElementById("defTable").rows.length;
+
+        for (let i = 1; i < delLen; i++) {
+          document.getElementById("defTable").deleteRow(-1);
+        }
+
+        for (let r = 0; r < wordsAndURLs.length; r++) {
+
+          var row = document.getElementById("defTable").insertRow();
+
+          var word = row.insertCell(0)
+          word.innerHTML = wordsAndURLs[r][0];
+
+          var def = row.insertCell(1)
+          def.innerHTML = "<a href=\"" + wordsAndURLs[r][1] + "\" target=\"_blank\" >Link</a>";
+
+      }
+    }
+
+    </script>
+
+  <body onload="updateTable();">
+
+    <p style="font-weight: bold; font-size: 14px;"> Quick Thesaurus </p>
+    <form class="searchForm">
+      <input type="search" id="query" name="q" placeholder="Search...">
+      <button onclick="fetchTreeData()">View Similar</button>
+    </form>
+
+
+    <p style="font-weight: bold; font-size: 16px;"> Synonym Tree </p>
+    <?!= include('synonymtree'); ?>
+
+    <table class="frqTable" id="defTable">
+      <caption> Definitions From Synonym Tree </caption>
+      <tr>
+        <th>Word</th>
+        <th>Definition Link</th>
+      </tr>
+
+    </table>
+
+
+    <table class="frqTable" id="frqTable">
+      <caption> Most Frequent Words </caption>
+      <tr>
+        <th>Word</th>
+        <th>Frequency</th>
+        <th>Launcher</th>
+      </tr>
+      <tr>
+        <td class="word">word1</td>
+        <td>10</td>
+        <td><button class="launchButton" onclick="google.script.run.startDialog(getWordFromRow(1))">&#8250;</button></td>
+      </tr>
+      <tr>
+        <td class="word">word2</td>
+        <td>7</td>
+        <td><button class="launchButton" onclick="google.script.run.startDialog(getWordFromRow(2))">&#8250;</button></td>
+      </tr>
+      <tr>
+        <td class="word">word3</td>
+        <td>4</td>
+        <td><button class="launchButton" onclick="google.script.run.startDialog(getWordFromRow(3))">&#8250;</button></td>
+      </tr>
+      <tr>
+        <td class="word">word4</td>
+        <td>4</td>
+        <td><button class="launchButton" onclick="google.script.run.startDialog(getWordFromRow(4))">&#8250;</button></td>
+      </tr>
+      <tr>
+        <td class="word">word5</td>
+        <td>4</td>
+        <td><button class="launchButton" onclick="google.script.run.startDialog(getWordFromRow(5))">&#8250;</button></td>
+      </tr>
+    </table>
+
+    <script>
+      function getWordFromRow(index) {
+        var currWord = document.getElementById('frqTable').rows[parseInt(index)].cells[0].innerHTML;
+        google.script.run.setWordToReplace(currWord);
+
+        return currWord;
+      }
+
+      function updateTable() {
+        var word2freq = google.script.run.withSuccessHandler(function (word2freq) {
+        document.getElementById('frqTable').rows[1].cells[0].innerHTML = word2freq[0][0];
+        document.getElementById('frqTable').rows[1].cells[1].innerHTML = word2freq[0][1];
+
+        document.getElementById('frqTable').rows[2].cells[0].innerHTML = word2freq[1][0];
+        document.getElementById('frqTable').rows[2].cells[1].innerHTML = word2freq[1][1];
+
+        document.getElementById('frqTable').rows[3].cells[0].innerHTML = word2freq[2][0];
+        document.getElementById('frqTable').rows[3].cells[1].innerHTML = word2freq[2][1];
+
+        document.getElementById('frqTable').rows[4].cells[0].innerHTML = word2freq[3][0];
+        document.getElementById('frqTable').rows[4].cells[1].innerHTML = word2freq[3][1];
+
+        document.getElementById('frqTable').rows[5].cells[0].innerHTML = word2freq[4][0];
+        document.getElementById('frqTable').rows[5].cells[1].innerHTML = word2freq[4][1];
+        }).getMostCommonWordsAndFreqs();
+      }
+
+    </script>
+
+  </body>
+</html>

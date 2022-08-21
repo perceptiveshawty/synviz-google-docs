@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title> Replace words with suggestions </title>
+    <link rel="stylesheet" href="https://ssl.gstatic.com/docs/script/css/add-ons.css">
+
+    <style>
+
+      body {
+        font-size: 20px;
+      }
+
+      button {
+        font-size: 12px;
+      }
+
+      button:hover {
+        background-color: #0e0e0e;
+      }
+
+      select {
+        font-size: 12px;
+      }
+
+      .suggestionDiv {
+        margin: auto;
+        margin-top: 10px;
+        width: 650px;
+        padding: 10px;
+        text-align: center;
+      }
+
+      .suggestionDiv label {
+        margin: auto;
+        margin-top: 30px;
+      }
+
+      .suggestionDiv select {
+        margin-left: auto;
+        margin-right: auto;
+        margin-top: 30px;
+      }
+
+      .buttonDiv {
+        margin: auto;
+        position: fixed;
+        bottom: 25px;
+        text-align: center;
+        width: 95%;
+      }
+
+      .navButton1 {
+        background-color: #f1f1f1;
+        color: black;
+        border-radius: 50%;
+        float: left;
+        width: 10px;
+      }
+
+      .navButton2 {
+        background-color: #f1f1f1;
+        color: black;
+        border-radius: 50%;
+        float: right;
+        width: 10px;
+      }
+
+      .updateButton {
+        margin-top: auto;
+        margin-bottom: auto;
+        margin-left: 25px;
+        margin-right: 25px;
+      }
+
+    </style>
+
+    <script>
+
+      // fetches the replacements array and passes it to setNumWordsToReplace()
+      function fetchAndStoreNumWordsToReplace() {
+        google.script.run.withSuccessHandler(setNumWordsToReplace).getReplacementsArray();
+      }
+
+      // uses the length of the replacements array to determine the number of words to replace
+      function setNumWordsToReplace(replacementsArray) {
+        document.getElementById("numWordsToReplace").innerHTML = replacementsArray.length;
+      }
+
+      // fetches the context array and passes it to updateContext()
+      function fetchAndUpdateContext() {
+        google.script.run.withSuccessHandler(updateContext).getContextArray();
+      }
+
+      function fetchAndUpdateHighlights() {
+        google.script.run.withSuccessHandler(updateHighlights).getIndicesArray();
+      }
+
+      function updateHighlights(indicesArray) {
+        var currIndex = parseInt(document.getElementById("currentIndex").innerHTML);
+        var targetIndex = indicesArray[currIndex];
+        var target = document.getElementById("wordToReplace").innerHTML;
+        var stringText = document.getElementById("context").innerHTML;
+        var occurrences = stringText.split(target);
+
+        var spanText = '<span style="color: violet;">' + String(target) + '</span>';
+
+        console.log(occurrences);
+        var newText = [];
+        occurrences.forEach(function (txt, i, occurs) {
+          if (i == targetIndex) {
+            newText.push(txt);
+            newText.push(spanText);
+          } else if (i == (occurs.length - 1)) {
+            newText.push(txt);
+          } else {
+            newText.push(txt);
+            newText.push(String(target));
+          }
+        });
+        // console.log(newText.join(''));
+        var fullText = newText.join('');
+        var parts = fullText.split(spanText);
+
+        var firstHalf = parts[0].slice(-250, -1);
+        var secondHalf = parts[1].slice(0, 250) + '...';
+        var finalText = firstHalf + spanText + secondHalf;
+
+        document.getElementById("context").innerHTML = finalText;
+      }
+
+      // updates the context in the dialog box with the context located at currIndex in the context array
+      function updateContext(contextsArray) {
+        document.getElementById("suggestions").selectedIndex = "0";
+        var currIndex = parseInt(document.getElementById("currentIndex").innerHTML);
+        document.getElementById("context").innerHTML = contextsArray[currIndex];
+
+        fetchAndUpdateHighlights();
+      }
+
+      // fetches the synonym array and passes it to setDropdownContent()
+      function getSynonymsAndSetDropdown() {
+        google.script.run.withSuccessHandler(setDropdownContent).getSynArray();
+      }
+
+      // adds the synonyms as options in the dropdown when first opening the dialog box
+      function setDropdownContent(synArray) {
+
+        var defaultopt = document.createElement("option");
+        defaultopt.disabled = true;
+        defaultopt.selected = true;
+        defaultopt.text = "Don't replace this";
+
+        document.getElementById("suggestions").appendChild(defaultopt);
+
+        for (var i = 0; i < synArray.length; i++) {
+          var option = document.createElement("option");
+          option.value = synArray[i];
+          option.text = synArray[i];
+          document.getElementById("suggestions").appendChild(option);
+        }
+      }
+
+      // updates the current index,
+      // hides the appropriate nav buttons,
+      // and updates context
+      function next() {
+        var currIndex = parseInt(document.getElementById("currentIndex").innerHTML);
+        var maxIndex = document.getElementById("numWordsToReplace").innerHTML;
+
+        document.getElementById("navButton1").hidden = false;
+        if(currIndex == maxIndex-1) {
+          document.getElementById("navButton2").hidden = true;
+          fetchAndUpdateContext();
+          return;
+        } else {
+          document.getElementById("navButton2").hidden = false;
+          fetchAndUpdateContext();
+        }
+
+        document.getElementById("currentIndex").innerHTML = currIndex + 1;
+      }
+
+      // updates the current index,
+      // hides the appropriate nav buttons,
+      // and updates context
+      function prev() {
+        var currIndex = parseInt(document.getElementById("currentIndex").innerHTML);
+
+        document.getElementById("navButton2").hidden = false;
+        if(currIndex == 0) {
+          document.getElementById("navButton1").hidden = true;
+          fetchAndUpdateContext();
+          return;
+        } else {
+          document.getElementById("navButton1").hidden = false;
+          fetchAndUpdateContext();
+        }
+
+        document.getElementById("currentIndex").innerHTML = currIndex - 1;
+      }
+
+      // fetches the replacements array and passes it to updateReplacement()
+      function fetchAndReplaceWord() {
+        google.script.run.withSuccessHandler(updateReplacement).getReplacementsArray();
+      }
+
+      // updates the replacements array at currIndex to the word currently selected in the dropdown
+      // when the user hits the "replace" button
+      function updateReplacement(replacementsArray) {
+        var currIndex = parseInt(document.getElementById("currentIndex").innerHTML);
+
+        var replacementsArrayCopy = replacementsArray;
+        var replacementWord = document.getElementById("suggestions").value;
+
+        replacementsArrayCopy[currIndex] = replacementWord;
+        google.script.run.setReplacementsArray(replacementsArrayCopy);
+      }
+
+      // replaces all words in the document to what was specified in the replacements array
+      // closes the dialog box after replacing words
+      function saveReplacements() {
+        var wordToReplace = document.getElementById("wordToReplace").innerHTML;
+        google.script.run.replaceAllWords(wordToReplace);
+        google.script.host.close(); // close dialog box after making all replacements
+        //updateTable(); // update counts of words in table ERROR: This function can't be reached!
+      }
+
+      // fetches the word to replace(saved from the table row that is currently accessed) and passes it to saveWordToReplaceAsParagraph()
+      function getWordToReplaceAndSaveToParagraph() {
+        google.script.run.withSuccessHandler(saveWordToReplaceAsParagraph).getWordToReplace();
+      }
+
+      // stores wordToReplace in a paragraph element
+      function saveWordToReplaceAsParagraph(wordToReplace) {
+        document.getElementById("wordToReplace").innerHTML = wordToReplace;
+      }
+
+    </script>
+
+  </head>
+
+  <body onload="getWordToReplaceAndSaveToParagraph(); fetchAndStoreNumWordsToReplace(); getSynonymsAndSetDropdown(); fetchAndUpdateContext();">
+
+    <p hidden id="currentIndex">0</p>
+    <p hidden id="numWordsToReplace">0</p>
+    <p hidden id="wordToReplace">test</p>
+
+    <div class="suggestionDiv">
+      <hr>
+      <p style="font-size: 13px;" id="context">test context</p>
+      <hr>
+      <label class="labelDiv">
+        replace with: &nbsp;
+        <select name="suggestions" id="suggestions">
+        </select>
+      </label>
+    </div>
+
+    <div class="buttonDiv">
+      <button id="navButton1" hidden=true onclick="prev();">&#8249;</button>
+      <button class="updateButton" onclick="fetchAndReplaceWord();"> Replace </button>
+      <button class="updateButton" onclick="saveReplacements();"> Replace and Finish </button>
+      <button id="navButton2" onclick="next();">&#8250;</button>
+    </div>
+
+    <!-- while loop going through contexts and updating dialog box -->
+
+
+  </body>
+</html>
